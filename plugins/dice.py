@@ -6,7 +6,7 @@ diceregex = re.compile(r'^(\d*?)?d(\d+?)([\+-]\d+?)?$', re.I)
 
 async def on_message(client, message):
     # return if the message doesn't start with a mention
-    prefix = client.user.mention
+    prefix = "^"
     msg = message.content
     if not msg.startswith(prefix): return
     msg = msg[len(prefix):]

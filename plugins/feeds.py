@@ -5,36 +5,45 @@ import time
 import peewee
 import database
 import re
-import plankboat
+import discord
 
 sleeptime = 60*15
 
-
-db = database.getDB()
 lastupdate = None
 
 class Feed(database.BaseModel):
     url = peewee.CharField()
     channel = peewee.CharField()
     server = peewee.CharField()
-    etag = peewee.CharField()
-    modified = peewee.CharField()
 
 async def on_load(client):
     lastupdate = time.gmtime()
     await client.wait_until_ready()
 
+    try:
+        Feed.create_table()
+    except peewee.OperationalError as err:
+        print(err)
+
     # feed update loop
     while not client.is_closed:
-        for feed, channels in feeds.items():
-            d = feedparser.parse(feed.url, etag=feed.etag, modified=feed.modified)
+        print("FEED: Checking feed updates...")
+        for feed in Feed.select():
+            d = feedparser.parse(feed.url)
             if d.status == 200:
-                feed.etag = d.etag
-                feed.modified = d.modified
-                feed.save()
                 for entry in d.entries:
-                    upd = entry.Get('published_parsed', entry.Get('updated_parsed', False))
-                    if not upd: return
+                    upd = None
+                    try:
+                        upd = entry.published_parsed
+                    except Exception as e:
+                        try:
+                            upd = entry.updated_parsed
+                        except Exception as e:
+                            print(e)
+
+                    if not upd:
+                        print("Cannot find updated field in feed '" + d.feed.title + "'!")
+                        break
 
                     if upd > lastupdate:
                         msg = '**' + d.feed.title + '**\n*' + entry.title + '*\n' + entry.link
@@ -42,36 +51,70 @@ async def on_load(client):
                         if server:
                             channel = discord.utils.find(lambda c: c.id == feed.channel, server.channels)
                             if channel:
-                                client.send_message(channel, msg)
+                                await client.send_message(channel, msg)
+            await asyncio.sleep(1)
         lastupdate = time.gmtime()
         await asyncio.sleep(sleeptime)
 
-feedre = re.compile(r"\s*feed\s+(\S+)\s+(\S+)")
+feedre = re.compile(r"\s*feed\s+(\S+)\s*(\S*)")
 
 async def on_message(client, message):
     # return if the message doesn't start with a mention
-    prefix = client.user.mention
+    prefix = "^"
     msg = message.content
     if not msg.startswith(prefix): return
 
-    msg = msg[len(prefix):]
+    perms = message.channel.permissions_for(message.author)
 
+    msg = msg[len(prefix):]
     match = feedre.match(msg)
     if match:
+        # Add feed to the current channel
         if match.group(1) == "add":
+            if not perms.manage_channels:
+                return
+            if not len(match.group(2)) > 0:
+                await client.send_message(message.channel, "You need to give me a link, dear sir.")
+                return
             if not message.channel.is_private:
                 try:
                     d = feedparser.parse(match.group(2))
-                    if d == 200:
+                    if d.status == 200:
                         newfeed = Feed()
                         newfeed.url = match.group(2)
-                        newfeed.etag = d.etag
-                        newfeed.modified = d.modified
                         newfeed.channel = message.channel.id
+                        newfeed.server = message.server.id
                         newfeed.save()
-                except Exception as e:
+                        await client.send_message(message.channel, "Successfully added " + d.feed.title + "!")
+                    else:
+                        await client.send_message(message.channel, "Oops! That didn't work! You sure that you gave me a correct feed link?")
+                except Exception as err:
+                    await client.send_message(message.channel, "Oops! Something went wrong!")
                     raise
             else:
-                client.send_message(message.channel, "Sorry, I can't add feeds to PMs yet!")
+                await client.send_message(message.channel, "Sorry, I can't add feeds in private messages yet!")
 
+        # Remove feed from the current channel
+        elif match.group(1) == "remove":
+            if not perms.manage_channels:
+                return
+            if not len(match.group(2)) > 0:
+                return
+            feeds = Feed.select().where(Feed.server == message.server.id and Feed.channel == message.channel.id and Feed.url == match.group(2))
+            if len(feeds) > 0:
+                for feed in feeds:
+                    feed.delete_instance()
+                await client.send_message(message.channel, "Successfully removed feed.")
+            else:
+                await client.send_message(message.channel, "Feed not found.")
 
+        # List all feeds in the current channel
+        elif match.group(1) == "list":
+            feeds = Feed.select().where(Feed.server == message.server.id and Feed.channel == message.channel.id)
+            if len(feeds) > 0:
+                msg = "**Feeds in this channel:**\n"
+                for feed in feeds:
+                    msg += "*" + feed.url + "*\n"
+                await client.send_message(message.channel, msg)
+            else:
+                await client.send_message(message.channel, "There are no feeds in this channel!")

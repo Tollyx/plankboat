@@ -8,8 +8,5 @@ class BaseModel(peewee.Model):
 
 db.connect()
 
-def getDB():
-    return db
-
-def close()
+def close():
     db.close()

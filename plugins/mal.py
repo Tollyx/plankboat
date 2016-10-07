@@ -8,7 +8,7 @@ mal_username = 'username'
 mal_password = 'password'
 
 async def on_message(client, message):
-    prefix = client.user.mention
+    prefix = "^"
     msg = message.content
     if not msg.startswith(prefix): return
     msg = msg[len(prefix):]
