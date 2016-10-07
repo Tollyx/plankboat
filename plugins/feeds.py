@@ -5,7 +5,6 @@ import time
 import peewee
 import database
 import re
-import discord
 
 sleeptime = 60*15
 
@@ -59,7 +58,6 @@ async def on_load(client):
 feedre = re.compile(r"\s*feed\s+(\S+)\s*(\S*)")
 
 async def on_message(client, message):
-    # return if the message doesn't start with a mention
     prefix = "^"
     msg = message.content
     if not msg.startswith(prefix): return

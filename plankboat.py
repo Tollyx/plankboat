@@ -7,7 +7,7 @@ import re
 bottoken = 'token'
 
 # The names of the plugins you want to be enabled. TODO: Make plugins be server-specific
-plugins = ['mal', 'dice', 'feeds']
+plugins = ['mal', 'dice', 'feeds', 'commands']
 
 client = discord.Client()
 
