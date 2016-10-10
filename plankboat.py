@@ -7,7 +7,7 @@ import re
 bottoken = 'token'
 
 # The names of the plugins you want to be enabled. TODO: Make plugins be server-specific
-plugins = ['mal', 'dice', 'feeds', 'commands']
+plugins = ['mal', 'dice', 'feeds', 'commands', 'roulette']
 commandprefix = '^'
 
 client = discord.Client()
@@ -19,15 +19,14 @@ def start():
         try:
             m = importlib.import_module('plugins.'+plugin)
         except ImportError as err:
-            print("Can't load plugin " + plugin + '!')
+            print("Can't load plugin '" + plugin + "'!")
             print(err)
             continue
 
         try:
             client.loop.create_task(m.on_load(client))
         except AttributeError as err:
-            print("Cannot start " + plugin + ".on_load")
-            print(err)
+            pass
 
         plugmods.append(m)
 
@@ -57,11 +56,11 @@ async def on_message(message):
             try:
                 await plugin.on_command(client, message, args)
             except AttributeError as err:
-                print(err)
+                pass
         else:
             try:
                 await plugin.on_message(client, message)
             except AttributeError as err:
-                print(err)
+                pass
 
 start()

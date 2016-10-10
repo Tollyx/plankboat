@@ -6,7 +6,7 @@ import peewee
 import database
 import re
 
-sleeptime = 60*15
+updaterate = 60*15
 
 lastupdate = None
 
@@ -53,7 +53,7 @@ async def on_load(client):
                                 await client.send_message(channel, msg)
             await asyncio.sleep(1)
         lastupdate = time.gmtime()
-        await asyncio.sleep(sleeptime)
+        await asyncio.sleep(updaterate)
 
 feedre = re.compile(r"\s*feed\s+(\S+)\s*(\S*)")
 
@@ -66,7 +66,7 @@ async def on_command(client, message, args):
             if not perms.manage_channels:
                 return
             if not len(args[2]) > 0:
-                await client.send_message(message.channel, "You need to give me a link, dear sir.")
+                await client.send_message(message.channel, "You need to give me a link to the feed you want to add, dear sir.")
                 return
             if not message.channel.is_private:
                 try:
@@ -77,6 +77,7 @@ async def on_command(client, message, args):
                         newfeed.channel = message.channel.id
                         newfeed.server = message.server.id
                         newfeed.save()
+                        print('FEED: ' + message.author.name + ' added feed "' + d.feed.title + '" to channel "' + message.channel.name + '" in server "' + message.server.name + '"')
                         await client.send_message(message.channel, "Successfully added " + d.feed.title + "!")
                     else:
                         await client.send_message(message.channel, "Oops! That didn't work! You sure that you gave me a correct feed link?")
@@ -96,6 +97,7 @@ async def on_command(client, message, args):
             if len(feeds) > 0:
                 for feed in feeds:
                     feed.delete_instance()
+                    print('FEED: ' + message.author.name + ' removed feed ' + feed.url + ' from channel "' + message.channel.name + '" in server "' + message.server.name + '"')
                 await client.send_message(message.channel, "Successfully removed feed.")
             else:
                 await client.send_message(message.channel, "Feed not found.")

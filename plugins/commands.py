@@ -33,13 +33,15 @@ async def on_command(client, message, args):
             newcmd.command = args[2]
             newcmd.message = ' '.join(args[3:])
             newcmd.save()
+            print('COMMAND: ' + message.author.name + ' created/updated command \'' + args[2] + "'")
             await client.send_message(message.channel, "Added new command '" + args[2] + "'")
 
         elif len(args) >= 3 and args[1] == "remove":
             commands = Command.select().where(Command.server == message.server.id and Command.command == args[2])
             for cmd in commands:
                 cmd.delete_instance()
-                await client.send_message(message.channel, "Deleted command '" + args[2] + "'")
+                print('COMMAND: ' + message.author.name + ' removed command \'' + cmd.command + "'")
+                await client.send_message(message.channel, "Deleted command '" + cmd.command + "'")
         elif args[1] == "list":
             commands = Command.select().where(Command.server == message.server.id)
             msg = ""
