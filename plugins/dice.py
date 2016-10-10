@@ -25,6 +25,6 @@ async def on_command(client, message, args):
         value += add
 
         if amount > 1 and amount <= 32:
-            await client.send_message(message.channel, str(value) + '\t(' + ', '.join(dice) + ')')
+            await client.send_message(message.channel, str(value) + '\t(' + ', '.join(map(str, dice)) + ')')
         else:
             await client.send_message(message.channel, str(value))
