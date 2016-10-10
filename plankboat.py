@@ -8,6 +8,7 @@ bottoken = 'token'
 
 # The names of the plugins you want to be enabled. TODO: Make plugins be server-specific
 plugins = ['mal', 'dice', 'feeds', 'commands']
+commandprefix = '^'
 
 client = discord.Client()
 
@@ -43,13 +44,24 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    global lastcmd
-    if message.author == client.user: return
+    if message.author.bot or message.author == client.user: return
+
+    args = False
+    if message.content.startswith(commandprefix):
+        args = message.content[len(commandprefix):].split()
+        if len(args) == 0:
+            args = False
 
     for plugin in plugmods:
-        try:
-            await plugin.on_message(client, message)
-        except AttributeError as err:
-            print(err)
+        if args:
+            try:
+                await plugin.on_command(client, message, args)
+            except AttributeError as err:
+                print(err)
+        else:
+            try:
+                await plugin.on_message(client, message)
+            except AttributeError as err:
+                print(err)
 
 start()

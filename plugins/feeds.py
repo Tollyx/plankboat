@@ -57,29 +57,23 @@ async def on_load(client):
 
 feedre = re.compile(r"\s*feed\s+(\S+)\s*(\S*)")
 
-async def on_message(client, message):
-    prefix = "^"
-    msg = message.content
-    if not msg.startswith(prefix): return
-
+async def on_command(client, message, args):
     perms = message.channel.permissions_for(message.author)
 
-    msg = msg[len(prefix):]
-    match = feedre.match(msg)
-    if match:
+    if args[0] == 'feed':
         # Add feed to the current channel
-        if match.group(1) == "add":
+        if args[1] == "add":
             if not perms.manage_channels:
                 return
-            if not len(match.group(2)) > 0:
+            if not len(args[2]) > 0:
                 await client.send_message(message.channel, "You need to give me a link, dear sir.")
                 return
             if not message.channel.is_private:
                 try:
-                    d = feedparser.parse(match.group(2))
+                    d = feedparser.parse(args[2])
                     if d.status == 200:
                         newfeed = Feed()
-                        newfeed.url = match.group(2)
+                        newfeed.url = args[2]
                         newfeed.channel = message.channel.id
                         newfeed.server = message.server.id
                         newfeed.save()
@@ -93,12 +87,12 @@ async def on_message(client, message):
                 await client.send_message(message.channel, "Sorry, I can't add feeds in private messages yet!")
 
         # Remove feed from the current channel
-        elif match.group(1) == "remove":
+        elif args[1] == "remove":
             if not perms.manage_channels:
                 return
-            if not len(match.group(2)) > 0:
+            if not len(args[2]) > 0:
                 return
-            feeds = Feed.select().where(Feed.server == message.server.id and Feed.channel == message.channel.id and Feed.url == match.group(2))
+            feeds = Feed.select().where(Feed.server == message.server.id and Feed.channel == message.channel.id and Feed.url == args[2])
             if len(feeds) > 0:
                 for feed in feeds:
                     feed.delete_instance()
@@ -107,7 +101,7 @@ async def on_message(client, message):
                 await client.send_message(message.channel, "Feed not found.")
 
         # List all feeds in the current channel
-        elif match.group(1) == "list":
+        elif args[1] == "list":
             feeds = Feed.select().where(Feed.server == message.server.id and Feed.channel == message.channel.id)
             if len(feeds) > 0:
                 msg = "**Feeds in this channel:**\n"

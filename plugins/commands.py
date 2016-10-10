@@ -14,12 +14,7 @@ async def on_load(client):
     except peewee.OperationalError as err:
         print(err)
 
-async def on_message(client, message):
-    prefix = "^"
-    args = message.content[len(prefix):].split()
-
-    if not len(args) > 0: return
-
+async def on_command(client, message, args):
     if args[0] == "command":
         if not message.channel.permissions_for(message.author).manage_channels: return
         if len(args) == 1 or args[1] == "help":
