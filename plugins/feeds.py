@@ -3,6 +3,7 @@ import requests
 import feedparser
 import time
 import peewee
+import discord
 import database
 import re
 

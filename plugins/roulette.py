@@ -8,6 +8,7 @@ async def on_command(client, message, args):
         if message.author.server_permissions.manage_channels:
             participants = []
             for member in message.server.members:
+                if member.bot: continue
                 if member.status != discord.Status.online: continue
                 perms = message.channel.permissions_for(member)
                 if perms.read_messages:
